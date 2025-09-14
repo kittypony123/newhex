@@ -511,6 +511,10 @@ export class AutoRoutingSystem {
       if (Lines && Lines.createLine && this.game.linesAvailable > 0) {
         const line = Lines.createLine(this.game, stationIds);
         if (line) {
+          // Ensure waypoints use hex pathfinding
+          if (Lines.rebuildWaypointsForLine) {
+            Lines.rebuildWaypointsForLine(this.game, line);
+          }
           this.game.linesAvailable--;
           // Immediately place a train on the new route if available to avoid early crowding
           if (this.game.trainsAvailable > 0 && typeof this.game.createTrain === 'function') {

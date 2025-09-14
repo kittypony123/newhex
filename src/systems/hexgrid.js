@@ -117,7 +117,7 @@ export function hexAStar(startWorld, endWorld, size = DEFAULT_HEX_SIZE) {
 export function createHexPath(ax, ay, bx, by, size = DEFAULT_HEX_SIZE) {
   const start = snapToHexVertex(ax, ay, size);
   const end = snapToHexVertex(bx, by, size);
-  const path = hexAStar(start, end, size);
+  const path = getCachedHexPath(start, end, size);
   if (!path || path.length === 0) return [start, end];
   // De-duplicate consecutive equal points
   const out = [];
@@ -126,6 +126,27 @@ export function createHexPath(ax, ay, bx, by, size = DEFAULT_HEX_SIZE) {
     if (!last || last.x !== p.x || last.y !== p.y) out.push(p);
   }
   return out;
+}
+
+// ---------------- Performance Cache (Phase 10) ----------------
+
+const hexCache = new Map();
+const CACHE_SIZE = 1000;
+
+export function getCachedHexPath(start, end, size = DEFAULT_HEX_SIZE) {
+  const key = `${start.x},${start.y}-${end.x},${end.y}-${size}`;
+  if (hexCache.has(key)) return hexCache.get(key);
+  const path = hexAStar(start, end, size);
+  if (hexCache.size >= CACHE_SIZE) {
+    const first = hexCache.keys().next().value;
+    hexCache.delete(first);
+  }
+  hexCache.set(key, path);
+  return path;
+}
+
+export function clearHexCache() {
+  hexCache.clear();
 }
 
 // ---------------- Corridor Bundling (Phase 2) ----------------

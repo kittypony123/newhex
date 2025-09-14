@@ -1,5 +1,5 @@
 import { segmentCrossesPolygon } from '../utils/intersections.js';
-import { createHexPath, applyCorridorBundling, applyTerminalBubbles } from './hexgrid.js';
+import { createHexPath, applyCorridorBundling, applyTerminalBubbles, clearHexCache } from './hexgrid.js';
 
 export function pickAvailableColorIndex(game){
   const used = new Set(game.lines.map(l => l.colorIndex).filter(i => i !== undefined));
@@ -143,6 +143,7 @@ function distanceToLineSegment(px, py, x1, y1, x2, y2){
 }
 
 export function rebuildWaypointsForLine(game, line){
+  clearHexCache();
   if (!line || !line.stations || line.stations.length < 2){ line.waypoints = null; return; }
   const pts = [];
   for (let i=0; i<line.stations.length-1; i++){
