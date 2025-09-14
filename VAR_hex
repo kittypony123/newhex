@@ -1,0 +1,57 @@
+// Octilinear (45°) routing with minimal turns and rounded rendering.
+// We keep the same exported function names used elsewhere.
+
+export function snapAngle45(rad){
+  const step = Math.PI/4; // 45°
+  return Math.round(rad / step) * step;
+}
+
+export function snapToGrid(x, y, size){
+  // Snap to nearest grid intersection (multiples of size)
+  return { x: Math.round(x/size)*size, y: Math.round(y/size)*size };
+}
+
+export function createHexPath(ax, ay, bx, by, size){
+  // Octilinear two-leg router: diagonal as far as possible, then axis to target.
+  // Produces at most 3 points: A -> P -> B, smoothened later by rounded polyline.
+  const A = { x: ax, y: ay };
+  const B = { x: bx, y: by };
+  const dx = bx - ax;
+  const dy = by - ay;
+  const absdx = Math.abs(dx);
+  const absdy = Math.abs(dy);
+  const sdx = Math.sign(dx) || 0;
+  const sdy = Math.sign(dy) || 0;
+
+  // If nearly straight along axis or perfect 45°, return straight path.
+  const EPS = 1e-6;
+  if (absdx < EPS || absdy < EPS || Math.abs(absdx - absdy) < EPS) {
+    return [A, B];
+  }
+
+  // Distance to travel along 45° first: min of |dx|,|dy|
+  const distDiag = Math.min(absdx, absdy);
+  // Move along diagonal by full grid steps to reduce jitter
+  const steps = Math.max(1, Math.round(distDiag / size));
+  const diagLen = steps * size;
+  const P = { x: ax + sdx * diagLen, y: ay + sdy * diagLen };
+  // Return A -> P -> B (avoid snapping bend to preserve exact 45° from A)
+  return dedupe([A, P, B]);
+}
+
+function normalizeAngle(a){
+  // Normalize to [-PI, PI]
+  while (a > Math.PI) a -= 2*Math.PI;
+  while (a < -Math.PI) a += 2*Math.PI;
+  return a;
+}
+
+function dedupe(pts){
+  const out = [];
+  for (const p of pts){
+    const last = out[out.length - 1];
+    if (!last || last.x !== p.x || last.y !== p.y) out.push(p);
+  }
+  return out;
+}
+
